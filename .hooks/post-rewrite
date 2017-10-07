@@ -1,0 +1,12 @@
+#!/bin/sh
+
+handle_rewrite() {
+  OLD_REV=$1
+  NEW_REV=$2
+
+  sh -c "$(git rev-parse --git-dir)/../.hooks/verify full $NEW_REV" &
+}
+
+while read LINE
+  do handle_rewrite $LINE
+done
