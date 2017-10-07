@@ -1,0 +1,49 @@
+{
+  "name": "sher.log",
+  "version": "1.0.0",
+  "engines": {
+    "node": "~8.4.0"
+  },
+  "description": "Sherlock is an exceptionally smart error detector.",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "scripts": {
+    "build": "npm run clean && tsc",
+    "clean": "rm -rf factory lib",
+    "lint": "tslint --project tsconfig.json --config tslint.json",
+    "prepare": "npm run build && mkdir lib && cp -R factory/* lib && rm -rf factory",
+    "release": "standard-version",
+    "test": "npm run build && jest"
+  },
+  "jest": {
+    "bail": true,
+    "resetModules": true,
+    "testEnvironment": "node",
+    "testMatch": ["<rootDir>/factory/specs/**/*.spec.js?(x)"],
+    "moduleFileExtensions": ["js", "jsx", "json"]
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alvis/sher.log.git"
+  },
+  "keywords": ["callsites", "debugger"],
+  "author": "Alvis HT Tang <alvis@hilbert.space>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/alvis/sher.log/issues"
+  },
+  "homepage": "https://github.com/alvis/sher.log#readme",
+  "devDependencies": {
+    "@types/jest": "^21.1.0",
+    "@types/node": "^8.0.0",
+    "jest": "^21.1.0",
+    "leakage": "^0.3.0",
+    "prettier": "^1.7.0",
+    "standard-version": "^4.2.0",
+    "tslint": "^5.7.0",
+    "tslint-config-prettier": "^1.5.0",
+    "typescript": "^2.5.0"
+  },
+  "dependencies": {
+  }
+}

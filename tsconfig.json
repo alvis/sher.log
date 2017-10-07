@@ -1,0 +1,36 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "outDir": "factory",
+    "target": "ES2017",
+    "alwaysStrict": true,
+    "declaration": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "isolatedModules": false,
+    "noImplicitAny": false,
+    "noImplicitUseStrict": false,
+    "noLib": false,
+    "noResolve": false,
+    "noUnusedLocals": true,
+    "noUnusedParameters": false,
+    "preserveConstEnums": true,
+    "removeComments": true,
+    "sourceMap": false,
+    "strictNullChecks": true,
+    "suppressImplicitAnyIndexErrors": true,
+    "lib": ["dom", "es2017"],
+    "plugins": [
+      {
+        "name": "tslint-language-service",
+        "alwaysShowRuleFailuresAsWarnings": true,
+        "ignoreDefinitionFiles": true,
+        "configFile": "tslint.json",
+        "disableNoUnusedVariableRule": false
+      }
+    ],
+    "typeRoots": ["node_modules/@types"]
+  },
+  "include": ["source/**/*.ts", "specs/**/*.ts"]
+}
