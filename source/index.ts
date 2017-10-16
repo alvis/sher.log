@@ -87,26 +87,40 @@ export class Sher {
       level: process.env.NODE_ENV === 'production' ? 'error' : 'info',
       // customLevels: [],
       ...defaultFromEnvironment, // override the default options at the top level
+      ..._options,
+      ...(_options.level ? { level: _options.level.toLowerCase() } : null),
       stdout: {
         output: true,
         ...defaultFromEnvironment.stdout,
-        ..._options.stdout
+        ..._options.stdout,
+        ...(_options.stdout && _options.stdout.level
+          ? { level: _options.stdout.level.toLowerCase() }
+          : null)
       },
       humanLog: {
         path: '',
         ...defaultFromEnvironment.humanLog,
-        ..._options.humanLog
+        ..._options.humanLog,
+        ...(_options.humanLog && _options.humanLog.level
+          ? { level: _options.humanLog.level.toLowerCase() }
+          : null)
       },
       jsonLog: {
         path: '',
         ...defaultFromEnvironment.jsonLog,
-        ..._options.jsonLog
+        ..._options.jsonLog,
+        ...(_options.jsonLog && _options.jsonLog.level
+          ? { level: _options.jsonLog.level.toLowerCase() }
+          : null)
       },
       stackdriver: {
         keyFile: '',
         projectID: '',
         ...defaultFromEnvironment.stackdriver,
-        ..._options.stackdriver
+        ..._options.stackdriver,
+        ...(_options.stackdriver && _options.stackdriver.level
+          ? { level: _options.stackdriver.level.toLowerCase() }
+          : null)
       },
       monitor: {
         display: true,
@@ -115,17 +129,26 @@ export class Sher {
         logging: {
           maxInterval: 300,
           maxChange: 0.1,
-          ...defaultFromEnvironment.monitor &&
+          ...(defaultFromEnvironment.monitor &&
           defaultFromEnvironment.monitor.logging
             ? defaultFromEnvironment.monitor.logging
-            : null,
-          ..._options.monitor ? _options.monitor.logging : null
+            : null),
+          ...(_options.monitor ? _options.monitor.logging : null)
         }
       }
     };
 
     // set up the loggers
     this.setupLoggers();
+  }
+
+  /** This functions remove listeners for unhandle exceptions */
+  public unhandleExceptions(): void {
+    for (const logger of Object.values(this.loggers)) {
+      if (logger) {
+        logger.unhandleExceptions();
+      }
+    }
   }
 
   /** This function brings up a resource monitoring message in the console. */
@@ -212,13 +235,13 @@ export class Sher {
 
     const messageStack: string[] = [];
 
-    /* --- Notes ---
+    /** --- Notes ---
      * For a status intended to be printed on the local console, it take the following steps
      * 1. pass all information to the log function as other do
      * 2. the log function will check if the status needed to be printed on a local console
      * 3. if so, the log function call this function back with **console** as the only output channel
      * 4. this status function then check and print the information on the local console
-     */
+     **/
 
     // determine whether extra message should be printed on a local console
     const shouldPrintLocally =
@@ -472,91 +495,94 @@ export class Sher {
   /** This function generate a SherOptions based on input from environment variables */
   private generateOptionsFromEnvironment(): DeepPartial<SherOptions> {
     const options: DeepPartial<SherOptions> = {
-      ...process.env.SHERLOG_CAPTURE_UNHANDLED_EXCEPTION
+      ...(process.env.SHERLOG_CAPTURE_UNHANDLED_EXCEPTION
         ? {
             captureUnhandledException: booleanize(
               process.env.SHERLOG_CAPTURE_UNHANDLED_EXCEPTION
             )
           }
-        : null,
-      ...process.env.SHERLOG_EXIT_ON_ERROR
+        : null),
+      ...(process.env.SHERLOG_EXIT_ON_ERROR
         ? {
             exitOnError: booleanize(process.env.SHERLOG_EXIT_ON_ERROR)
           }
-        : null,
-      ...process.env.SHERLOG_EMIT_ERRORS
+        : null),
+      ...(process.env.SHERLOG_EMIT_ERRORS
         ? {
             emitErrors: booleanize(process.env.SHERLOG_EMIT_ERRORS)
           }
-        : null,
-      ...process.env.SHERLOG_LEVEL
+        : null),
+      ...(process.env.SHERLOG_LEVEL
         ? { level: (process.env.SHERLOG_LEVEL as string).toLowerCase() }
-        : null,
-      ...process.env.SHERLOG_HUMAN_LOG_PATH
+        : null),
+      stdout: {
+        ...(process.env.SHERLOG_STDOUT
+          ? {
+              output: booleanize(process.env.SHERLOG_STDOUT)
+            }
+          : null),
+        ...(process.env.SHERLOG_STDOUT_LEVEL
+          ? {
+              level: (process.env.SHERLOG_STDOUT_LEVEL as string).toLowerCase()
+            }
+          : null)
+      },
+      ...(process.env.SHERLOG_HUMAN_LOG_PATH
         ? {
             humanLog: {
               path: process.env.SHERLOG_HUMAN_LOG_PATH as string,
-              ...process.env.SHERLO_HUMAN_LOG_LEVEL
+              ...(process.env.SHERLOG_HUMAN_LOG_LEVEL
                 ? {
-                    level: process.env.SHERLOG_HUMAN_LOG_LEVEL
+                    level: (process.env
+                      .SHERLOG_HUMAN_LOG_LEVEL as string).toLowerCase()
                   }
-                : null
+                : null)
             }
           }
-        : null,
-      ...process.env.SHERLOG_JSON_LOG_PATH
+        : null),
+      ...(process.env.SHERLOG_JSON_LOG_PATH
         ? {
             jsonLog: {
               path: process.env.SHERLOG_JSON_LOG_PATH as string,
-              ...process.env.SHERLOG_JSON_LOG_LEVEL
+              ...(process.env.SHERLOG_JSON_LOG_LEVEL
                 ? {
-                    level: process.env.SHERLOG_JSON_LOG_LEVEL
+                    level: (process.env
+                      .SHERLOG_JSON_LOG_LEVEL as string).toLowerCase()
                   }
-                : null
+                : null)
             }
           }
-        : null,
-      ...process.env.SHERLOG_STACKDRIVER_KEY_FILE &&
+        : null),
+      ...(process.env.SHERLOG_STACKDRIVER_KEY_FILE &&
       process.env.SHERLOG_STACKDRIVER_PROJECT_ID
         ? {
             stackdriver: {
               keyFile: process.env.SHERLOG_STACKDRIVER_KEY_FILE as string,
               projectID: process.env.SHERLOG_STACKDRIVER_PROJECT_ID as string,
-              ...process.env.SHERLOG_STACKDRIVER_LOG_LEVEL
+              ...(process.env.SHERLOG_STACKDRIVER_LOG_LEVEL
                 ? {
-                    level: process.env.SHERLOG_STACKDRIVER_LOG_LEVEL
+                    level: (process.env
+                      .SHERLOG_STACKDRIVER_LOG_LEVEL as string).toLowerCase()
                   }
-                : null
+                : null)
             }
           }
-        : null,
-      stdout: {
-        ...process.env.SHERLOG_STDOUT
-          ? {
-              output: booleanize(process.env.SHERLOG_STDOUT)
-            }
-          : null,
-        ...process.env.SHERLOG_STDOUT_LEVEL
-          ? {
-              level: process.env.SHERLOG_STDOUT_LEVEL
-            }
-          : null
-      },
-      ...process.env.SHERLOG_MONITOR_DISPLAY ||
+        : null),
+      ...(process.env.SHERLOG_MONITOR_DISPLAY ||
       process.env.SHERLOG_MONITOR_LOGGING_MAX_INTERVAL ||
       process.env.SHERLOG_MONITOR_LOGGING_MAX_CHANGE
         ? {
             monitor: {
-              ...process.env.SHERLOG_MONITOR_DISPLAY
+              ...(process.env.SHERLOG_MONITOR_DISPLAY
                 ? {
                     display: booleanize(process.env.SHERLOG_MONITOR_DISPLAY)
                   }
-                : null,
-              ...process.env.SHERLOG_MONITOR_LOGGING_MAX_INTERVAL ||
+                : null),
+              ...(process.env.SHERLOG_MONITOR_LOGGING_MAX_INTERVAL ||
               process.env.SHERLOG_MONITOR_LOGGING_MAX_CHANGE
                 ? {
                     logging: {
-                      ...process.env.SHERLOG_MONITOR_LOGGING_MAX_INTERVAL
+                      ...(process.env.SHERLOG_MONITOR_LOGGING_MAX_INTERVAL
                         ? {
                             maxInterval: parseInt(
                               process.env
@@ -564,8 +590,8 @@ export class Sher {
                               10
                             )
                           }
-                        : null,
-                      ...process.env.SHERLOG_MONITOR_LOGGING_MAX_CHANGE
+                        : null),
+                      ...(process.env.SHERLOG_MONITOR_LOGGING_MAX_CHANGE
                         ? {
                             maxChange: parseInt(
                               process.env
@@ -573,13 +599,13 @@ export class Sher {
                               10
                             )
                           }
-                        : null
+                        : null)
                     }
                   }
-                : null
+                : null)
             }
           }
-        : null
+        : null)
     };
 
     return options;
@@ -607,6 +633,10 @@ export class Sher {
     // set up the logger for stdout
     if (this.options.stdout.output) {
       this.transports.stdout = new winston.transports.Console({
+        ...(this.options.stdout.level
+          ? { level: this.options.stdout.level }
+          : null),
+
         handleExceptions: this.options.captureUnhandledException,
         humanReadableUnhandledException: this.options.captureUnhandledException,
 
@@ -681,14 +711,13 @@ export class Sher {
     // set up the logger for human log
     if (this.options.humanLog.path) {
       this.transports.human = new winston.transports.File({
+        ...(this.options.humanLog.level
+          ? { level: this.options.humanLog.level }
+          : null),
         filename: this.options.humanLog.path,
 
         handleExceptions: this.options.captureUnhandledException,
-        humanReadableUnhandledException: this.options.captureUnhandledException,
-
-        ...this.options.humanLog.level
-          ? { level: this.options.humanLog.level }
-          : null
+        humanReadableUnhandledException: this.options.captureUnhandledException
       });
 
       transports.human.push(this.transports.human);
@@ -697,16 +726,15 @@ export class Sher {
     // set up the logger for json log
     if (this.options.jsonLog.path) {
       this.transports.json = new winston.transports.File({
-        filename: this.options.jsonLog.path,
-
-        handleExceptions: this.options.captureUnhandledException,
-        humanReadableUnhandledException: this.options.captureUnhandledException,
-
-        ...this.options.jsonLog.level
+        ...(this.options.jsonLog.level
           ? {
               level: this.options.jsonLog.level
             }
-          : null
+          : null),
+        filename: this.options.jsonLog.path,
+
+        handleExceptions: this.options.captureUnhandledException,
+        humanReadableUnhandledException: this.options.captureUnhandledException
       });
 
       transports.json.push(this.transports.json);
@@ -724,11 +752,11 @@ export class Sher {
         keyFilename: this.options.stackdriver.keyFile,
         projectId: this.options.stackdriver.projectID,
 
-        ...this.options.stackdriver.level
+        ...(this.options.stackdriver.level
           ? {
               level: this.options.stackdriver.level
             }
-          : null
+          : null)
       }) as winston.TransportInstance;
 
       transports.json.push(this.transports.stackdriver);
@@ -781,7 +809,7 @@ export class Sher {
    * @param options - The logging options
    */
   public static debug(message: string, options?: MessageOptions): void {
-    Sher.log('debug', message, options);
+    this.log('debug', message, options);
   }
 
   /**
@@ -790,7 +818,7 @@ export class Sher {
    * @param options - The logging options
    */
   public static error(message: string, options?: MessageOptions): void {
-    Sher.log('error', message, options);
+    this.log('error', message, options);
   }
 
   /**
@@ -799,7 +827,7 @@ export class Sher {
    * @param options - The logging options
    */
   public static info(message: string, options?: MessageOptions): void {
-    Sher.log('info', message, options);
+    this.log('info', message, options);
   }
 
   /**
@@ -813,7 +841,9 @@ export class Sher {
     message: string,
     options?: MessageOptions
   ): void {
-    new Sher({}).log(level, message, options);
+    const sher = new this();
+    sher.log(level, message, options);
+    sher.unhandleExceptions();
   }
 
   /**
@@ -822,7 +852,7 @@ export class Sher {
    * @param options - The logging options
    */
   public static status(message: string, options?: MessageOptions): void {
-    Sher.log('status', message, options);
+    this.log('status', message, options);
   }
 
   /**
@@ -831,7 +861,7 @@ export class Sher {
    * @param options - The logging options
    */
   public static verbose(message: string, options?: MessageOptions): void {
-    Sher.log('verbose', message, options);
+    this.log('verbose', message, options);
   }
 
   /**
@@ -840,7 +870,7 @@ export class Sher {
    * @param options - The logging options
    */
   public static warn(message: string, options?: MessageOptions): void {
-    Sher.log('warn', message, options);
+    this.log('warn', message, options);
   }
 }
 
