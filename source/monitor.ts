@@ -1,6 +1,6 @@
 import bind from 'bind-decorator';
 import * as byteSize from 'byte-size';
-import * as chalk from 'chalk';
+import chalk from 'chalk';
 import { EventEmitter } from 'events';
 import * as prettyMS from 'pretty-ms';
 

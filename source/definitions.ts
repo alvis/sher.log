@@ -1,7 +1,25 @@
+export type DeepPartial<T> = { [P in keyof T]?: DeepPartial<T[P]> }; // todo: replace with the latest syntax
+
 export type Levels = 'debug' | 'warn' | 'info' | 'verbose' | 'debug' | string;
 // export type Logger = 'stdout' | 'human' | 'json' | 'stackdriver';
 
-export type DeepPartial<T> = { [P in keyof T]?: DeepPartial<T[P]> };
+/**
+ * The actual output channels
+ * std = the standard output includeing stdout and stderr
+ * human = a human friendly log file
+ * json = a machine friendly log file (including stackdriver)
+ */
+export type OutputChannel = 'stdout' | 'human' | 'json';
+
+/**
+ * A functional channel is a shortcut option for output in different scenarios
+ * console = output in a non-container environment
+ * container = output in a container environment
+ * log = output all logging options available (human/json/stackdriver)
+ */
+export type FunctionalChannel = 'console' | 'container' | 'log';
+
+export type Channel = OutputChannel | FunctionalChannel;
 
 export interface FormatterOptions {
   level: string;
@@ -14,7 +32,7 @@ export interface MessageOptions {
   loggingMessage?: string;
   data?: object;
   meta?: object;
-  channels?: ('console' | 'log' | 'stdout' | 'human' | 'json')[];
+  channels?: Channel[];
 }
 
 export interface SherOptions {

@@ -1,5 +1,5 @@
-import * as stackdriver from '@google-cloud/logging-winston';
-import * as chalk from 'chalk';
+import { LoggingWinston as stackdriver } from '@google-cloud/logging-winston';
+import chalk from 'chalk';
 import * as eyes from 'eyes';
 import * as log from 'log-update';
 import * as prettyjson from 'prettyjson-256';
@@ -9,11 +9,15 @@ import { Monitor } from './monitor';
 import { Progress, ProgressOptions } from './progress';
 import { booleanize, isRunningInContainer, shouldPrint } from './utilities';
 
+import * as fs from 'fs';
+
 import {
+  Channel,
   DeepPartial,
   FormatterOptions,
   Levels,
   MessageOptions,
+  OutputChannel,
   SherOptions
 } from './definitions';
 
@@ -29,6 +33,11 @@ export const levels = {
   debug: 4,
   silly: 5
 };
+
+export interface Status {
+  options?: MessageOptions;
+  message: string;
+}
 
 /** The class for Sher.log */
 export class Sher {
@@ -214,7 +223,7 @@ export class Sher {
   }
 
   /**
-   * This function can be used for reporting real-time message on the console.
+   * This function controls where does a status message get output.
    * @param message - The message to be reported
    * @param options - The options for the message
    */
@@ -224,6 +233,22 @@ export class Sher {
     _messageOrOptions?: string | null | MessageOptions,
     _options?: MessageOptions
   ): void {
+    /* --- Notes ---
+         * A status message can be initialised by the following two methods:
+         * 1. sher.status(...)
+         * 2. sher.log('status', ...)
+         *
+         * For a status intended to be printed on the local console via sher.status(...), it take the following steps:
+         * 1. compute the output channels
+         * 2. filter out any console channel and log the message on other available channels via sher.log(...)
+         * 3. check if any console channel is available and use sher.printStatus to print the message on console
+         *
+         * For a status intended to be printed on the local console via sher.log(...), it take the following steps:
+         * 1. compute the output channels
+         * 2. filter out non console channel and log the message on other available channels via normal procedures
+         * 3. check if any console channel is available and use sher.printStatus to print the message on console
+         */
+
     const message =
       typeof _messageOrOptions === 'object' && _messageOrOptions !== null
         ? undefined
@@ -233,85 +258,41 @@ export class Sher {
         ? _messageOrOptions
         : _options;
 
-    const messageStack: string[] = [];
+    // compute output channels
+    // const channels: Channel[] = options && options.channels ? options.channels : (this.options.stdout.output ? ['stdout']: this.getOutputChannels¡());
 
-    /** --- Notes ---
-     * For a status intended to be printed on the local console, it take the following steps
-     * 1. pass all information to the log function as other do
-     * 2. the log function will check if the status needed to be printed on a local console
-     * 3. if so, the log function call this function back with **console** as the only output channel
-     * 4. this status function then check and print the information on the local console
-     **/
-
-    // determine whether extra message should be printed on a local console
-    const shouldPrintLocally =
-      !this.isRunningInContainer &&
-      options &&
-      options.channels &&
-      options.channels.length === 1 &&
-      options.channels[0] === 'console';
-
-    // include monitor and progress only the target channel is the local console
-    if (shouldPrintLocally && this.monitor) {
-      // content from monitor
-      if (this.options.monitor.display) {
-        messageStack.push(this.monitor.consoleMessage);
-      }
-
-      // content from progress bars
-      const progresses = Array.from(this.progresses.keys());
-      const maxNameLength = Math.max(
-        ...progresses.map(progress => progress.name.length)
-      );
-      progresses.forEach(progress =>
-        messageStack.push(
-          progress.consoleMessage({
-            nameLength: maxNameLength,
-            barLength: 50
-          })
-        )
-      );
+    if (message !== undefined) {
+      this.log('status', message, options);
     }
 
-    // use the message only if message is supplied
-    if (message !== null) {
-      if (shouldPrintLocally) {
-        // store the status message for later use
-        if (message !== undefined) {
-          this.statusMessage = message;
-
-          // attach data to the message
-          if (options && options.data) {
-            this.statusMessage += `\n${this.yamlFormatter(options.data)}`;
-          }
-        }
-
-        if (this.statusMessage) {
-          messageStack.push(this.statusMessage);
-        }
-
-        // print on the local console
-        const localMessage = messageStack.join('\n');
-
-        log('\n' + chalk.red(localMessage));
-      } else if (message !== undefined) {
-        // submit the status to the logger
-        this.log('status', message, options);
-      }
-    } else {
-      // clear status on the local console
-      log.clear();
-      delete this.statusMessage;
-    }
+    // submit the status to the logger
+    // const nonStdChannels = channels.filter(channel => !['console', 'stdout'].includes(channel));
+    // if (message !== null && message !== undefined && nonStdChannels.length) {
+    //   this.log('status', message, {...options, channels: nonStdChannels}
+    //   );
+    // }
+    //
+    // // print the status on console
+    // if (message !== null && message !== undefined) {
+    //   this.printStatus( message,  options);
+    // }
+    // const consoleChannels = channels.filter(channel => ['console', 'stdout'].includes(channel));
+    // if (message !== null && message !== undefined && consoleChannels.length) {
+    //   this.printStatus( message,  {...options, channels: consoleChannels});
+    // }
   }
 
   /**
    * This function is the base function of all other logging functions for different logging levels.
    * @param level - The level at which the message is reported
-   * @param message - The message to be reported
+   * @param message - The message to be reported, or null for clearing status
    * @param options - The options for the message
    */
-  public log(level: string, message: string, options?: MessageOptions): void {
+  public log(
+    level: string,
+    message: string | null,
+    options?: MessageOptions
+  ): void {
     const _level = this.options.level;
 
     // force logging everything is reqested
@@ -327,27 +308,9 @@ export class Sher {
     }
 
     // determine the outout channels
-    const channels = {
-      human:
-        options && options.channels
-          ? options.channels.includes('human') ||
-            options.channels.includes('log')
-          : true,
-      json:
-        options && options.channels
-          ? options.channels.includes('json') ||
-            options.channels.includes('log')
-          : true,
-      stdout:
-        (options && options.channels
-          ? options.channels.includes(
-              this.isRunningInContainer ? 'log' : 'console'
-            ) || options.channels.includes('stdout')
-          : true) &&
-        // stdout is allowed in level status only if the process is run in a container image
-        (level !== 'status' ||
-          (level === 'status' && this.isRunningInContainer))
-    };
+    const channels = this.getOutputChannels(
+      options ? options.channels : undefined
+    );
 
     // determine the messages
     const messages = {
@@ -355,32 +318,44 @@ export class Sher {
         options && options.loggingMessage ? options.loggingMessage : message,
       json:
         options && options.loggingMessage ? options.loggingMessage : message,
-      stdout: this.isRunningInContainer
-        ? options && options.loggingMessage ? options.loggingMessage : message
-        : message
+      stdout:
+        this.isRunningInContainer && options && options.loggingMessage
+          ? options.loggingMessage
+          : message
     };
 
     // clear status on the local console before any other message
     if (!this.isRunningInContainer && this.loggers.stdout && channels.stdout) {
       log.clear();
     }
-
+    fs.writeFileSync('/tmp/options', JSON.stringify(options));
+    fs.writeFileSync('/tmp/channels', JSON.stringify(channels));
     // send the message to the outlets
-    if (this.loggers.stdout && channels.stdout) {
+    if (
+      messages.stdout &&
+      this.loggers.stdout &&
+      channels.stdout &&
+      // stdout is allowed in level status only if the process is run in a container image
+      // in a console environment, status is printed by the printStatus method in the end of this method
+
+      (level !== 'status' || (level === 'status' && this.isRunningInContainer))
+    ) {
       this.loggers.stdout.log(
         level,
         messages.stdout,
         options ? options.data : {}
       );
     }
-    if (this.loggers.human && channels.human) {
+
+    if (messages.human && this.loggers.human && channels.human) {
       this.loggers.human.log(
         level,
         messages.human,
         options ? options.data : {}
       );
     }
-    if (this.loggers.json && channels.json) {
+
+    if (messages.json && this.loggers.json && channels.json) {
       this.loggers.json.log(
         level,
         messages.json,
@@ -388,20 +363,12 @@ export class Sher {
       );
     }
 
-    // print the status on to the local console again if it is set
-    if (
-      !this.isRunningInContainer &&
-      level === 'status' &&
-      (options && options.channels
-        ? options.channels.includes(
-            this.isRunningInContainer ? 'log' : 'console'
-          ) || options.channels.includes('stdout')
-        : true)
-    ) {
-      this.status(message, {
-        ...options,
-        channels: ['console']
-      });
+    if (level === 'status') {
+      this.printStatus(message, options);
+    } else {
+      // print previous status on to the local console again if it is set
+
+      this.printStatus();
     }
 
     // restore the transports to the original state
@@ -490,6 +457,112 @@ export class Sher {
    */
   public verbose(message: string, options?: MessageOptions): void {
     this.log('verbose', message, options);
+  }
+
+  private getOutputChannels(
+    channels?: Channel[]
+  ): Record<OutputChannel, boolean> {
+    if (channels !== undefined && channels.length === 0) {
+      // do not output anything if empty channel is supplied
+      return {
+        human: false,
+        json: false,
+        stdout: false
+      };
+    } else {
+      // normal output
+      return {
+        human: channels
+          ? channels.includes('human') || channels.includes('log')
+          : this.options.humanLog.path !== '',
+        json: channels
+          ? channels.includes('json') || channels.includes('log')
+          : this.options.jsonLog.path !== '' ||
+            (this.options.stackdriver.keyFile !== '' &&
+              this.options.stackdriver.projectID !== ''),
+        stdout: channels
+          ? channels.includes('stdout') ||
+            (this.isRunningInContainer
+              ? channels.includes('container') || channels.includes('log')
+              : channels.includes('console'))
+          : this.options.stdout.output === true
+      };
+    }
+  }
+
+  /**
+   * This function prints real-time message on the console.
+   * @param message - The message to be reported
+   * @param options - The options for the message
+   */
+  private printStatus(message?: string | null, options?: MessageOptions): void {
+    const messageStack: string[] = [];
+
+    // determine whether extra message should be printed on a local console
+    const shouldPrintLocally =
+      !this.isRunningInContainer &&
+      this.options.stdout.output &&
+      (!options ||
+        (options &&
+          options.channels &&
+          options.channels.filter(channel =>
+            ['console', 'stdout'].includes(channel)
+          ).length > 0));
+
+    // include monitor and progress only the target channel is the local console
+    if (shouldPrintLocally && this.monitor) {
+      // content from monitor
+      if (this.options.monitor.display) {
+        messageStack.push(this.monitor.consoleMessage);
+      }
+
+      // content from progress bars
+      const progresses = Array.from(this.progresses.keys());
+      const maxNameLength = Math.max(
+        ...progresses.map(progress => progress.name.length)
+      );
+      progresses.forEach(progress =>
+        messageStack.push(
+          progress.consoleMessage({
+            nameLength: maxNameLength,
+            barLength: 50
+          })
+        )
+      );
+    }
+
+    // use the message only if message is supplied
+    if (message !== null) {
+      if (shouldPrintLocally) {
+        // store the status message for later use
+        if (message !== undefined) {
+          this.statusMessage = message;
+
+          // attach data to the message
+          if (options && options.data) {
+            this.statusMessage += `\n${this.yamlFormatter(options.data)}`;
+          }
+        }
+
+        if (this.statusMessage) {
+          messageStack.push(this.statusMessage);
+        }
+
+        // clear status on the local console
+        log.clear();
+
+        if (messageStack.length) {
+          // print on the local console
+          const localMessage = messageStack.join('\n');
+
+          log('\n' + chalk.red(localMessage));
+        }
+      }
+    } else {
+      // clear status on the local console
+      log.clear();
+      delete this.statusMessage;
+    }
   }
 
   /** This function generate a SherOptions based on input from environment variables */
@@ -746,8 +819,8 @@ export class Sher {
       this.options.stackdriver.projectID
     ) {
       this.transports.stackdriver = new stackdriver({
-        handleExceptions: this.options.captureUnhandledException,
-        humanReadableUnhandledException: this.options.captureUnhandledException,
+        // handleExceptions: this.options.captureUnhandledException,
+        // humanReadableUnhandledException: this.options.captureUnhandledException,
 
         keyFilename: this.options.stackdriver.keyFile,
         projectId: this.options.stackdriver.projectID,

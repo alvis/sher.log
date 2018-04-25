@@ -1,5 +1,5 @@
 import bind from 'bind-decorator';
-import * as chalk from 'chalk';
+import chalk from 'chalk';
 import { EventEmitter } from 'events';
 
 export interface ProgressOptions {
@@ -24,7 +24,7 @@ export class Progress extends EventEmitter {
   private limit: number;
   private updateInterval: number;
 
-  private startTime: number;
+  // private startTime: number;
   private lastEmit: number;
 
   constructor(options?: Partial<ProgressOptions>) {
@@ -48,7 +48,7 @@ export class Progress extends EventEmitter {
     }
 
     // start the timers
-    this.startTime = Date.now();
+    // this.startTime = Date.now();
     this.lastEmit = Date.now();
   }
 

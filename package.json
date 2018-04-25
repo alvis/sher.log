@@ -34,29 +34,29 @@
   },
   "homepage": "https://github.com/alvis/sher.log#readme",
   "devDependencies": {
-    "@types/chalk": "^0.4.31",
+    "@types/chalk": "^2.2.0",
     "@types/eyes": "^0.1.31",
-    "@types/jest": "^21.1.0",
+    "@types/jest": "^22.2.0",
     "@types/log-update": "^2.0.0",
-    "@types/node": "^8.0.0",
-    "@types/winston": "^2.3.6",
-    "jest": "^21.1.0",
+    "@types/node": "^9.6.6",
+    "@types/winston": "^2.3.0",
+    "jest": "^22.4.0",
     "leakage": "^0.3.0",
-    "prettier": "^1.7.0",
-    "standard-version": "^4.2.0",
-    "tslint": "^5.7.0",
-    "tslint-config-prettier": "^1.5.0",
-    "typescript": "^2.5.0"
+    "prettier": "^1.12.0",
+    "standard-version": "^4.3.0",
+    "tslint": "^5.9.0",
+    "tslint-config-prettier": "^1.10.0",
+    "typescript": "^2.8.0"
   },
   "dependencies": {
-    "@google-cloud/logging-winston": "^0.5.0",
-    "bind-decorator": "^1.0.11",
-    "byte-size": "^4.0.2",
-    "chalk": "^2.1.0",
+    "@google-cloud/logging-winston": "^0.9.0",
+    "bind-decorator": "^1.0.0",
+    "byte-size": "^4.0.0",
+    "chalk": "^2.4.0",
     "eyes": "^0.1.8",
-    "log-update": "^2.1.0",
-    "pretty-ms": "^3.0.1",
-    "prettyjson-256": "^1.5.12",
-    "winston": "^2.3.1"
+    "log-update": "^2.3.0",
+    "pretty-ms": "^3.1.0",
+    "prettyjson-256": "^1.5.0",
+    "winston": "^2.4.0"
   }
 }
