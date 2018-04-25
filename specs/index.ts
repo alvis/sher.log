@@ -19,19 +19,14 @@ export class SherTest extends Sher {
   }
 }
 
-export interface TestOptionsHumanJSON {
-  /** The output channel to be tested */
-  channel: 'human' | 'json';
-  /** the path of the output */
-  path: string;
-}
+/**
+ * An environment is what under which a test is performed
+ */
+export type Environment = 'stdout' | 'human' | 'json' | 'stackdriver';
 
-export interface TestOptionsStdout {
-  /** The output channel to be tested */
-  channel: 'console' | 'container';
-}
-
-export interface TestOptionsPrototype {
+export interface TestOptions {
+  /** The simulated environment to be tested */
+  environment: Environment;
   /** The level at which the logger is set */
   level: Levels;
   /** Indicate whether the test is pretended to be run in a container environment */
@@ -41,9 +36,6 @@ export interface TestOptionsPrototype {
   /** Indicate whether instance methods are used */
   useInstance: boolean;
 }
-
-export type TestOptions = TestOptionsPrototype &
-  (TestOptionsHumanJSON | TestOptionsStdout);
 
 /**
  * A helper function to generate options for sher.log
@@ -64,10 +56,12 @@ export function generateOptions(
     level: options.useIndividualLevel ? 'status' : options.level
   };
 
+  // temporary output path for log file output
+  const logPath = ''; // todo: temporary path
+
   // setup the output channel
-  switch (options.channel) {
-    case 'console':
-    case 'container':
+  switch (options.environment) {
+    case 'stdout':
       if (options.useIndividualLevel) {
         process.env.SHERLOG_STDOUT_LEVEL = options.level;
       }
@@ -76,7 +70,7 @@ export function generateOptions(
         ...sherOptions,
         stdout: {
           output: true,
-          ...options.useIndividualLevel ? { level: options.level } : null
+          ...(options.useIndividualLevel ? { level: options.level } : null)
         }
       };
       break;
@@ -87,8 +81,8 @@ export function generateOptions(
           output: false
         },
         humanLog: {
-          path: options.path,
-          ...options.useIndividualLevel ? { level: options.level } : null
+          path: logPath,
+          ...(options.useIndividualLevel ? { level: options.level } : null)
         }
       };
     case 'json':
@@ -98,8 +92,8 @@ export function generateOptions(
           output: false
         },
         jsonLog: {
-          path: options.path,
-          ...options.useIndividualLevel ? { level: options.level } : null
+          path: logPath,
+          ...(options.useIndividualLevel ? { level: options.level } : null)
         }
       };
     default:
