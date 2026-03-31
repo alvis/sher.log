@@ -1,0 +1,72 @@
+{
+  "name": "sherlog",
+  "version": "1.0.0",
+  "description": "Beautiful error rendering — colorized stack traces with source code display.",
+  "keywords": [
+    "error",
+    "render",
+    "stack",
+    "trace",
+    "source",
+    "highlight",
+    "colorize",
+    "chalk"
+  ],
+  "homepage": "https://github.com/alvis/sherlog#readme",
+  "bugs": {
+    "url": "https://github.com/alvis/sherlog/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alvis/sherlog.git"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "Alvis HT Tang",
+    "email": "alvis@hilbert.space"
+  },
+  "type": "module",
+  "imports": {
+    "#*": "./src/*.ts"
+  },
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "main": "lib/index.js",
+  "module": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "scripts": {
+    "build": "run build",
+    "lint": "run lint --",
+    "prepare": "run prepare",
+    "prepublishOnly": "run prepublishOnly",
+    "release": "run release --",
+    "test": "run test --",
+    "test:coverage": "run test:coverage --",
+    "test:watch": "run test:watch --"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@presetter/preset-esm": "^9.0.0",
+    "@presetter/preset-strict": "^9.0.0",
+    "@types/node": "^24.0.0",
+    "@vitest/coverage-v8": "^4.0.0",
+    "jsdom": "^29.0.0",
+    "presetter": "^9.0.0",
+    "typescript": "^5.9.0",
+    "vitest": "^4.1.0"
+  },
+  "packageManager": "pnpm@11.14.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "publishConfig": {
+    "imports": {
+      "#*": "./lib/*.js"
+    }
+  }
+}
