@@ -27,6 +27,10 @@
   },
   "type": "module",
   "imports": {
+    "#content": {
+      "browser": "./src/content.browser.ts",
+      "default": "./src/content.node.ts"
+    },
     "#*": "./src/*.ts"
   },
   "exports": {
@@ -69,6 +73,10 @@
   },
   "publishConfig": {
     "imports": {
+      "#content": {
+        "browser": "./lib/content.browser.js",
+        "default": "./lib/content.node.js"
+      },
       "#*": "./lib/*.js"
     }
   }
